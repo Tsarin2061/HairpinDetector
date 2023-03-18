@@ -81,7 +81,7 @@ def main():
             f"\n  Results are stored in {output_names}.xlsx\n  Please use different output name to avoid overwriting data!"
         )
     else:
-        print("\n  Your fasta file contains an errors. Check the sequense please!")
+        print("\n  Your fasta file contains an errors. Check the sequence please!")
 
 
 def read_fasta(path):
@@ -185,7 +185,7 @@ def filter_list(list_to_filter):
     """Filtering list by GC%
 
     Args:
-        list_to_filter (list): contain cordinates and sequenses of  all iverted repeats
+        list_to_filter (list): contain cordinates and sequences of  all iverted repeats
 
     Returns:
         list : filtering by threshold
