@@ -17,6 +17,8 @@ Find a location where you want to locate the script and clone the script using g
     git clone https://gitfront.io/r/user-6248310/VaNevp21GQjs/HairpinDetector.git
 Installation of requirements:
 
+*You should install python manually, other requirements will be installed with the following command:
+
     pip install -r requirements.txt
 
 
