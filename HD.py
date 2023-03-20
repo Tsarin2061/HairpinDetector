@@ -66,13 +66,13 @@ def main():
     # defining global variables with CL arguments as a values
     global fasta_file, stem_length, loop_length, threshold_GC, output_names
     fasta_file, stem_length, loop_length, threshold_GC, output_names = parse_arg()
-    seq = read_fasta(fasta_file)
+    seq = read_file(fasta_file)
     if validate(seq):
         if len(filter_list(parse_seq(seq, stem_length))) == 0:
             sys.exit("Hairpins were not found!")
         else:
             table = PrettyTable()
-            table.field_names = ["Coordinates","Inverted repeat1","Hairpin region" ,'Inverted repeat2']
+            table.field_names = ["№","Coordinates","Inverted repeat1","Hairpin region" ,'Inverted repeat2']
             for i in filter_list(parse_seq(seq, stem_length)):
                 table.add_row(i)
             write_table(filter_list(parse_seq(seq, stem_length)))
@@ -84,7 +84,7 @@ def main():
         print("\n  Your fasta file contains an errors. Check the sequence please!")
 
 
-def read_fasta(path):
+def read_file(path):
     # reads fasta file
     record = SeqIO.read(path, "fasta")
     return record.seq
@@ -100,10 +100,12 @@ def write_table(data):
         {
             "data": data,
             "columns": [
+                {"header": "№"},
                 {"header": "Coordinates"},
                 {"header": "Inverted repeat 1"},
                 {"header": "Hairpin region"},
                 {"header": "Inverted repeat 2"},
+                
             ],
         },
     )
@@ -143,7 +145,7 @@ def parse_seq(seq, l):
     g = l
     # list with coordinates and sequences
     list = []
-    for _ in range(len(seq) ** 2):
+    for i in range(len(seq) ** 2):
         act_loop_len = (g + 1) - end
         if seq[start:end] != Seq(seq[g + 1 : g + l + 1]).reverse_complement():
             g += 1
@@ -191,9 +193,13 @@ def filter_list(list_to_filter):
         list : filtering by threshold
     """
     filtered_list = []
+    number = 1
     for sample in list_to_filter:
         if sample[1].count("G") + sample[1].count("C") >= threshold_GC:
+            sample.insert(0,number)
+            number+=1
             filtered_list.append(sample)
+            
 
     return filtered_list
 
