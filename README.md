@@ -14,7 +14,7 @@
 ## Setup
 Find a location where you want to locate the script and clone the script using git:
 
-    git clone git@github.com:Tsarin2061/HairpinDetector.git
+    git clone https://github.com/Tsarin2061/HairpinDetector.git
 Installation of requirements:
 
 *You should install python manually, other requirements will be installed with the following command:
