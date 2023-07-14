@@ -4,9 +4,10 @@
 import argparse
 import xlsxwriter
 import sys
-from prettytable import PrettyTable
 from Bio.Seq import Seq
 from Bio import SeqIO
+import pandas as pd
+
 
 
 
@@ -66,20 +67,17 @@ def main():
     # defining global variables with CL arguments as a values
     global fasta_file, stem_length, loop_length, threshold_GC, output_names
     fasta_file, stem_length, loop_length, threshold_GC, output_names = parse_arg()
-    seq = read_file(fasta_file)
+    # creating df instead of lists
+    seq = read_file(fasta_file)    
+    final_df = filter_df(parse_seq(seq, stem_length)).reset_index().drop(columns = 'index')
+
     if validate(seq):
-        if len(filter_list(parse_seq(seq, stem_length))) == 0:
+        if len(final_df) == 0:
             sys.exit("Hairpins were not found!")
         else:
-            table = PrettyTable()
-            table.field_names = ["№","Coordinates","Inverted repeat1","Hairpin region" ,'Inverted repeat2']
-            for i in filter_list(parse_seq(seq, stem_length)):
-                table.add_row(i)
-            write_table(filter_list(parse_seq(seq, stem_length)))
-            print(table)
-        print(
+            print(final_df)
+            final_df.to_excel(f'{output_names}.xlsx')
             f"\n  Results are stored in {output_names}.xlsx\n  Please use different output name to avoid overwriting data!"
-        )
     else:
         print("\n  Your fasta file contains an errors. Check the sequence please!")
 
@@ -139,6 +137,7 @@ def parse_seq(seq, l):
     Returns:
         list : [coordinates of hairpin, sequence, inverted sequece]
     """
+    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2', 'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates'])
     seq = Seq(seq)
     start = 0
     end = l
@@ -164,14 +163,16 @@ def parse_seq(seq, l):
                 and seq[end] != Seq(seq[g]).reverse_complement()
             ):
                 # if we found inverted repeat - we add it to list and look for next one
-                list.append(
-                    [
+
+                seqs_df.loc[len(seqs_df)] =[
                         f"{start}-{g+l+1}",
                         str(seq[start:end]),
-                        str(seq[start : g + l + 1]),
                         str(seq[g + 1 : g + l + 1]),
-                    ]
-                )
+                        str(seq[start : g + l + 1]),
+                        str(seq[start-15: g + l + 1+15]),
+                        f"{start-15}-{g+l+1+15}"
+                    ]            
+
                 start += 1
                 end += 1
                 g = l + start
@@ -180,29 +181,22 @@ def parse_seq(seq, l):
                 g += 1
                 pass
         if start == len(seq) - 2 * l + loop_length:
-            return list
+            return seqs_df
 
 
-def filter_list(list_to_filter):
+def filter_df(df_to_filter):
     """Filtering list by GC%
 
     Args:
-        list_to_filter (list): contain cordinates and sequences of  all iverted repeats
+     df_to_filter(DataFrame): contain cordinates and sequences of  all iverted repeats
 
     Returns:
-        list : filtering by threshold
+         : filtered by threshold
     """
-    filtered_list = []
-    number = 1
-    for sample in list_to_filter:
-        if sample[1].count("G") + sample[1].count("C") >= threshold_GC:
-            sample.insert(0,number)
-            number+=1
-            filtered_list.append(sample)
-            
+    mask = (df_to_filter['IR1'].str.count('C') + df_to_filter['IR1'].str.count('G')) >= threshold_GC
 
-    return filtered_list
-
-
+    # Apply the mask to filter the dataframe
+    filtered_df = df_to_filter[mask]
+    return filtered_df
 if __name__ == "__main__":
     main()
