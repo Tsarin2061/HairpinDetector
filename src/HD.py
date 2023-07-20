@@ -2,11 +2,11 @@
 # Author: Lev Tsarin
 
 import argparse
-import xlsxwriter
 import sys
 from Bio.Seq import Seq
 from Bio import SeqIO
 import pandas as pd
+from src.viz import seq_visualisation
 
 
 
@@ -65,11 +65,11 @@ def parse_arg():
 
 def main():
     # defining global variables with CL arguments as a values
-    global fasta_file, stem_length, loop_length, threshold_GC, output_names
+    # global fasta_file, stem_length, loop_length, threshold_GC, output_names
     fasta_file, stem_length, loop_length, threshold_GC, output_names = parse_arg()
     # creating df instead of lists
     seq = read_file(fasta_file)    
-    final_df = filter_df(parse_seq(seq, stem_length)).reset_index().drop(columns = 'index')
+    final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
 
     if validate(seq):
         if len(final_df) == 0:
@@ -81,33 +81,16 @@ def main():
     else:
         print("\n  Your fasta file contains an errors. Check the sequence please!")
 
+    #vizualization part
+
+    # for index,seq in final_df.iterrows():
+    #     print(seq['Adjacent_region(30nt)'])
+    #     seq_visualisation(seq['Adjacent_region(30nt)'], name = seq['AR_coordinates'])
 
 def read_file(path):
     # reads fasta file
     record = SeqIO.read(path, "fasta")
     return record.seq
-
-
-def write_table(data):
-    wb = xlsxwriter.Workbook(f"{output_names}.xlsx")
-    ws = wb.add_worksheet()
-    cell = wb.add_format()
-    cell.set_text_wrap()
-    ws.add_table(
-        f"A1:D{len(data)+1}",
-        {
-            "data": data,
-            "columns": [
-                {"header": "№"},
-                {"header": "Coordinates"},
-                {"header": "Inverted repeat 1"},
-                {"header": "Hairpin region"},
-                {"header": "Inverted repeat 2"},
-                
-            ],
-        },
-    )
-    wb.close()
 
 
 def validate(s):
@@ -125,66 +108,69 @@ def validate(s):
             return False
     else:
         return True
-
-
-def parse_seq(seq, l):
+def parse_seq(seq, ir_length, loop_length):
     """Inverted repeat detection
 
     Args:
         seq (string): nucleotide sequence
-        l (integer): lenght of inverted repeat we are looking for
+       ir_length(integer): lenght of inverted repeat we are looking for
 
     Returns:
-        list : [coordinates of hairpin, sequence, inverted sequece]
+        seqs_df : a banch of information about hairpins.
     """
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2', 'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates'])
     seq = Seq(seq)
     start = 0
-    end = l
-    g = l
+    end = ir_length
+    ir2_length = ir_length
     # list with coordinates and sequences
     list = []
     for i in range(len(seq) ** 2):
-        act_loop_len = (g + 1) - end
-        if seq[start:end] != Seq(seq[g + 1 : g + l + 1]).reverse_complement():
-            g += 1
+        act_loop_len = (ir2_length + 1) - end
+        if seq[start:end] != Seq(seq[ir2_length + 1 :ir2_length +ir_length+ 1]).reverse_complement():
+            ir2_length += 1
             if act_loop_len >= loop_length:
                 # if inversted repead was not found - we looking for another one
                 start += 1
                 end += 1
-                g = l + start
+                ir2_length = ir_length+ start
             else:
                 pass
         else:
             # checks if loop meet requirments and correctness of inverted repeats.
             if (
                 act_loop_len == loop_length
-                and seq[start - 1] != Seq(seq[g + l + 1]).reverse_complement()
-                and seq[end] != Seq(seq[g]).reverse_complement()
+                and seq[start - 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
+                and seq[end] != Seq(seq[ir2_length]).reverse_complement()
             ):
                 # if we found inverted repeat - we add it to list and look for next one
-
                 seqs_df.loc[len(seqs_df)] =[
-                        f"{start}-{g+l+1}",
+                    # coordinates
+                        f"{start}-{ir2_length + ir_length +1}",
+                    # IRs
                         str(seq[start:end]),
-                        str(seq[g + 1 : g + l + 1]),
-                        str(seq[start : g + l + 1]),
-                        str(seq[start-15: g + l + 1+15]),
-                        f"{start-15}-{g+l+1+15}"
-                    ]            
+                        str(seq[ir2_length + 1 : ir2_length + ir_length + 1]),
+                    # entire hairpin
+                        str(seq[start : ir2_length +ir_length+ 1]),
+                    # extended hairpin region
+                        str(seq[start-15:   ir2_length +ir_length+ 1+15]),
+                    # coordinates #2
+                        f"{start-15}-{ir2_length+ir_length+1+15}",
+                        
 
+                    ]            
                 start += 1
                 end += 1
-                g = l + start
+                ir2_length = ir_length + start
 
             else:
-                g += 1
-                pass
-        if start == len(seq) - 2 * l + loop_length:
+              ir2_length += 1
+              pass
+        if start == len(seq) - 2 * ir_length + loop_length:
             return seqs_df
 
 
-def filter_df(df_to_filter):
+def filter_df(df_to_filter,threshold_GC):
     """Filtering list by GC%
 
     Args:
