@@ -6,7 +6,7 @@ import sys
 from Bio.Seq import Seq
 from Bio import SeqIO
 import pandas as pd
-from src.viz import seq_visualisation
+# from viz import seq_visualisation
 
 
 
@@ -90,7 +90,7 @@ def main():
 def read_file(path):
     # reads fasta file
     record = SeqIO.read(path, "fasta")
-    return record.seq
+    return str(record.seq)
 
 
 def validate(s):
@@ -127,20 +127,20 @@ def parse_seq(seq, ir_length, loop_length):
     list = []
     for i in range(len(seq) ** 2):
         act_loop_len = (ir2_length + 1) - end
-        if seq[start:end] != Seq(seq[ir2_length + 1 :ir2_length +ir_length+ 1]).reverse_complement():
+        if seq[start:end] != Seq(seq[ir2_length + 1 :ir2_length + ir_length + 1]).reverse_complement():
             ir2_length += 1
             if act_loop_len >= loop_length:
                 # if inversted repead was not found - we looking for another one
                 start += 1
                 end += 1
-                ir2_length = ir_length+ start
+                ir2_length = ir_length + start
             else:
                 pass
         else:
             # checks if loop meet requirments and correctness of inverted repeats.
             if (
                 act_loop_len == loop_length
-                and seq[start - 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
+                and seq[start + 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
                 and seq[end] != Seq(seq[ir2_length]).reverse_complement()
             ):
                 # if we found inverted repeat - we add it to list and look for next one
@@ -157,12 +157,10 @@ def parse_seq(seq, ir_length, loop_length):
                     # coordinates #2
                         f"{start-15}-{ir2_length+ir_length+1+15}",
                         
-
                     ]            
                 start += 1
                 end += 1
                 ir2_length = ir_length + start
-
             else:
               ir2_length += 1
               pass
