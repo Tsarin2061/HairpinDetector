@@ -6,7 +6,7 @@ import sys
 from Bio.Seq import Seq
 from Bio import SeqIO
 import pandas as pd
-import Levenshtein
+
 
 
 
