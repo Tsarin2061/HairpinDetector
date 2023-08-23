@@ -6,7 +6,7 @@ import sys
 from Bio.Seq import Seq
 from Bio import SeqIO
 import pandas as pd
-# from viz import seq_visualisation
+import Levenshtein
 
 
 
@@ -81,11 +81,6 @@ def main():
     else:
         print("\n  Your fasta file contains an errors. Check the sequence please!")
 
-    #vizualization part
-
-    # for index,seq in final_df.iterrows():
-    #     print(seq['Adjacent_region(30nt)'])
-    #     seq_visualisation(seq['Adjacent_region(30nt)'], name = seq['AR_coordinates'])
 
 def read_file(path):
     # reads fasta file
@@ -108,6 +103,7 @@ def validate(s):
             return False
     else:
         return True
+    
 def parse_seq(seq, ir_length, loop_length):
     """Inverted repeat detection
 
@@ -125,11 +121,11 @@ def parse_seq(seq, ir_length, loop_length):
     ir2_length = ir_length
     # list with coordinates and sequences
     list = []
-    for i in range(len(seq) ** 2):
+    while start != len(seq) - 2 * ir_length + loop_length:
         act_loop_len = (ir2_length + 1) - end
-        if seq[start:end] != Seq(seq[ir2_length + 1 :ir2_length + ir_length + 1]).reverse_complement():
+        if seq[start:end] != Seq(seq[ir2_length+1 :ir2_length + ir_length + 1]).reverse_complement():
             ir2_length += 1
-            if act_loop_len >= loop_length:
+            if act_loop_len > loop_length:
                 # if inversted repead was not found - we looking for another one
                 start += 1
                 end += 1
@@ -139,9 +135,8 @@ def parse_seq(seq, ir_length, loop_length):
         else:
             # checks if loop meet requirments and correctness of inverted repeats.
             if (
-                act_loop_len == loop_length
-                and seq[start + 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
-                and seq[end] != Seq(seq[ir2_length]).reverse_complement()
+                act_loop_len >= loop_length 
+                and seq[start - 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
             ):
                 # if we found inverted repeat - we add it to list and look for next one
                 seqs_df.loc[len(seqs_df)] =[
@@ -166,6 +161,52 @@ def parse_seq(seq, ir_length, loop_length):
               pass
         if start == len(seq) - 2 * ir_length + loop_length:
             return seqs_df
+
+
+def parse_imperfect_palindormes(sequence, palindrome_len, threshold, max_distance):
+    seq = Seq(sequence)
+    palindrome_list = []
+    
+    for i in range(len(seq) - palindrome_len + 1):
+        position1_start = i
+        position1_end = i + palindrome_len
+        position2_start = i + palindrome_len
+        position2_end = i + palindrome_len * 2
+        gap = 0
+        
+        while position2_end <= len(seq) and gap <= max_distance:
+            first = seq[position1_start:position1_end]
+            second = str(Seq(seq[position2_start:position2_end]).reverse_complement())
+            mismatches = compare_dna_sequences(str(first), str(second))
+            
+            if mismatches <= threshold:
+                palindrome_list.append(seq[position1_start:position2_end])
+            
+            position2_start += 1
+            position2_end += 1
+            gap += 1
+    
+    return str(palindrome_list[0])
+
+
+
+
+
+
+def compare_dna_sequences(seq1, seq2):
+    if len(seq1) != len(seq2):
+        raise ValueError("Input sequences must have the same length")
+    
+    mismatches = 0
+    for base1, base2 in zip(seq1, seq2):
+        if base1 != base2:
+            mismatches += 1
+            
+    return mismatches
+
+
+
+
 
 
 def filter_df(df_to_filter,threshold_GC):
