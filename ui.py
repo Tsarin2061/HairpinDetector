@@ -7,11 +7,14 @@ import tempfile
 
 def main():
     # page set up
+    
     st.set_page_config(
     page_title = "HairpinDetector",
-    initial_sidebar_state = "expanded")
+    initial_sidebar_state = "expanded",
+    )
     st.title('HairpinDetector')
     st.text('Detects hairpins formed by perfect palindromes')
+    
 
     # uploading data to analyse/ 0 - data itself, 1 - way we analyse it(text, multi/fasta).
     input_info = input_options()     
@@ -26,6 +29,8 @@ def main():
     
 
     analyse(way,data,loop_length,stem_length,threshold)
+    st.runtime.legacy_caching.clear_cache()
+
 
 
 def input_options():
@@ -48,7 +53,6 @@ def input_options():
         return sequence, 'fasta'
     
 
-@st.cache_data(experimental_allow_widgets=True)
 def analyse(way,data,loop_length, stem_length, threshold):
     if way == 'fasta':
         for file in data:
@@ -71,13 +75,15 @@ def analyse(way,data,loop_length, stem_length, threshold):
                 searchall_button = st.button("Search all")
             if search_button and stem_length is not None and loop_length is not None and threshold is not None:
                 # applying function to find hairpins and filter them 
-                hairpins_df = parse_seq(seq.seq, stem_length,loop_length)
-                filtered_df = filter_df(hairpins_df,threshold)
+                with st.spinner("Searching..."):
+                    hairpins_df = parse_seq(seq.seq, stem_length,loop_length)
+                    filtered_df = filter_df(hairpins_df,threshold)
                 # display df
                 st.write(filtered_df)
             if searchall_button:
                 # applying function to find hairpins and filter them 
-                hairpins_df = full_search(seq.seq)
+                with st.spinner("Searching..."):
+                    hairpins_df = full_search(seq.seq)
                 # display df
                 st.write(hairpins_df)
 
@@ -101,14 +107,16 @@ def analyse(way,data,loop_length, stem_length, threshold):
             st.text("Search all hairpins \nwhich could occur")
             searchall_button = st.button("Search all")
         if search_button and stem_length is not None and loop_length is not None and threshold is not None:
-            # applying function to find hairpins and filter them 
-            hairpins_df = parse_seq(seq, stem_length,loop_length)
-            filtered_df = filter_df(hairpins_df,threshold)
+            # applying function to find hairpins and filter them
+            with st.spinner("Searching..."):
+                hairpins_df = parse_seq(seq, stem_length,loop_length)
+                filtered_df = filter_df(hairpins_df,threshold)
             # display df
             st.write(filtered_df)
         if searchall_button and stem_length is not None and loop_length is not None and threshold is not None:
             # applying function to find hairpins and filter them 
-            hairpins_df = full_search(seq)
+            with st.spinner("Searching..."):
+                hairpins_df = full_search(seq)
             # display df
             st.write(hairpins_df)
 
