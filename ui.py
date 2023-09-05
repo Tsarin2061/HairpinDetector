@@ -1,7 +1,6 @@
 # TsarinLev@gmail.com
 import streamlit as st
 import pandas as pd
-from io import StringIO
 from src.HD import parse_seq, filter_df, validate
 from Bio import SeqIO
 import tempfile
@@ -25,7 +24,6 @@ def main():
     stem_length = columns[1].number_input('Length of a stem',0,10)
     threshold = columns[2].number_input('GC count in a stem',0,10)
     
-
 
     analyse(way,data,loop_length,stem_length,threshold)
 
@@ -77,9 +75,9 @@ def analyse(way,data,loop_length, stem_length, threshold):
                 filtered_df = filter_df(hairpins_df,threshold)
                 # display df
                 st.write(filtered_df)
-            if searchall_button and stem_length is not None and loop_length is not None and threshold is not None:
+            if searchall_button:
                 # applying function to find hairpins and filter them 
-                hairpins_df = full_search(seq.seq,loop_len=loop_length,stem_len=stem_length)
+                hairpins_df = full_search(seq.seq)
                 # display df
                 st.write(hairpins_df)
 
@@ -127,6 +125,7 @@ def full_search(data,loop_len = 15, stem_len = 15):
                 pass
     df = df.drop_duplicates(subset="Hairpin_region")
     df.reset_index(inplace=True)
+    df.drop(columns="index",inplace=True)
     return df
 
 
