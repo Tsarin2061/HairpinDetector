@@ -4,6 +4,7 @@ import pandas as pd
 from src.HD import parse_seq, filter_df, validate
 from Bio import SeqIO
 import tempfile
+import re
 
 def main():
     # page set up
@@ -96,7 +97,10 @@ def analyse(way,data,loop_length, stem_length, threshold):
             
 
     elif way == 'text':
-        seq = data
+        seq = re.sub(r'[^a-zA-Z]', '', data)
+        seq.replace(' ','')
+        for i in range(10):
+            seq.replace(str(i),'0')
         if validate(seq) == False:
             return st.write("This string must consist exclusively of nucleotides(A, T, G, C)!")
         col1,col2 = st.columns(2)

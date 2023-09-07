@@ -138,24 +138,41 @@ def parse_seq(seq, ir_length, loop_length):
                 act_loop_len >= loop_length 
                 and seq[start - 1] != Seq(seq[ir2_length + ir_length + 1]).reverse_complement()
             ):
-                # if we found inverted repeat - we add it to list and look for next one
-                seqs_df.loc[len(seqs_df)] =[
-                    # coordinates
-                        f"{start}-{ir2_length + ir_length +1}",
-                    # IRs
-                        str(seq[start:end]),
-                        str(seq[ir2_length + 1 : ir2_length + ir_length + 1]),
-                    # entire hairpin
-                        str(seq[start : ir2_length +ir_length+ 1]),
-                    # extended hairpin region
-                        str(seq[start-15:   ir2_length +ir_length+ 1+15]),
-                    # coordinates #2
-                        f"{start-15}-{ir2_length+ir_length+1+15}",
-                        
-                    ]            
+                if seq[start:end+1] != Seq(seq[ir2_length: ir2_length + ir_length + 1]).reverse_complement():
+                    # if we found inverted repeat - we add it to list and look for next one
+                    seqs_df.loc[len(seqs_df)] =[
+                        # coordinates
+                            f"{start}-{ir2_length + ir_length +1}",
+                        # IRs
+                            str(seq[start:end]),
+                            str(seq[ir2_length+1: ir2_length + ir_length + 1]),
+                        # entire hairpin
+                            str(seq[start : ir2_length +ir_length+ 1]),
+                        # extended hairpin region
+                            str(seq[start-15:   ir2_length +ir_length+ 1+15]),
+                        # coordinates #2
+                            f"{start-15}-{ir2_length+ir_length+1+15}",
+                            
+                        ]
+                elif seq[start:end+1] == Seq(seq[ir2_length : ir2_length + ir_length + 1]).reverse_complement():
+                    seqs_df.loc[len(seqs_df)] =[
+                        # coordinates
+                            f"{start}-{ir2_length + ir_length +1}",
+                        # IRs
+                            str(seq[start:end+1]),
+                            str(seq[ir2_length: ir2_length + ir_length + 1]),
+                        # entire hairpin
+                            str(seq[start : ir2_length +ir_length+ 1]),
+                        # extended hairpin region
+                            str(seq[start-15:   ir2_length +ir_length+ 1+15]),
+                        # coordinates #2
+                            f"{start-15}-{ir2_length+ir_length+1+15}",     
+                        ]
+
                 start += 1
                 end += 1
                 ir2_length = ir_length + start
+
             else:
               ir2_length += 1
               pass
