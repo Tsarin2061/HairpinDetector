@@ -8,9 +8,6 @@ from Bio import SeqIO
 import pandas as pd
 
 
-
-
-
 def parse_arg():
     """fucntion that parse aguments
 
@@ -68,24 +65,36 @@ def main():
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
     fasta_file, stem_length, loop_length, threshold_GC, output_names = parse_arg()
     # creating df instead of lists
-    seq = read_file(fasta_file)    
-    final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-
-    if validate(seq):
-        if len(final_df) == 0:
-            sys.exit("Hairpins were not found!")
-        else:
-            print(final_df)
-            final_df.to_excel(f'{output_names}.xlsx')
-            f"\n  Results are stored in {output_names}.xlsx\n  Please use different output name to avoid overwriting data!"
+    seq = read_file(fasta_file)
+    if type(seq) != dict:
+        final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
     else:
-        print("\n  Your fasta file contains an errors. Check the sequence please!")
+        dfs = []
+        for id,subseq in seq.items():
+            final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+            final_df = final_df.assign(ID = id)
+            final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
+            dfs.append(final_df)
+        merged_df = pd.concat(dfs, ignore_index=True)
+        print(merged_df)
+    if len(final_df) == 0:
+        sys.exit("Hairpins were not found!")
+    else:
+        print(final_df)
+        final_df.to_csv(f'{output_names}.csv')
+        f"\n  Results are stored in {output_names}.xlsx\n  Please use different output name to avoid overwriting data!"
+
 
 
 def read_file(path):
-    # reads fasta file
-    record = SeqIO.read(path, "fasta")
-    return str(record.seq)
+    dict = {}
+    records = list(SeqIO.parse(path,"fasta"))
+    if len(records) == 1:
+        return records[len(records)-1].seq
+    else:
+        for i in records:
+            dict[i.id] = i.seq
+        return dict
 
 
 def validate(s):
@@ -114,7 +123,7 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
-    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2', 'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates'])
+    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2', 'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
     start = 0
     end = ir_length
@@ -152,6 +161,8 @@ def parse_seq(seq, ir_length, loop_length):
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
+                            f"{loop_length}",
+                            f"{ir_length}"
                             
                         ]
                 elif seq[start:end+1] == Seq(seq[ir2_length : ir2_length + ir_length + 1]).reverse_complement():
@@ -166,7 +177,9 @@ def parse_seq(seq, ir_length, loop_length):
                         # extended hairpin region
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
-                            f"{start-15}-{ir2_length+ir_length+1+15}",     
+                            f"{start-15}-{ir2_length+ir_length+1+15}",
+                            f"{loop_length}",
+                            f"{ir_length}"     
                         ]
 
                 start += 1
@@ -178,7 +191,22 @@ def parse_seq(seq, ir_length, loop_length):
               pass
         if start == len(seq) - 2 * ir_length + loop_length:
             return seqs_df
+        
 
+def full_search(data,loop_len = 15, stem_len = 15, treshold = 0):
+    df = pd.DataFrame()
+    for i in range(loop_len):
+        for j in range(4,stem_len):
+            for k in range(treshold,stem_len):
+                try:
+                    iter_df = parse_seq(seq = data,loop_length = i,ir_length = j)
+                    df = pd.concat([df,iter_df],axis = 0)
+                except IndexError:
+                    pass
+    df = df.drop_duplicates(subset="Hairpin_region")
+    df.reset_index(inplace=True)
+    df.drop(columns="index",inplace=True)
+    return df
 
 def parse_imperfect_palindormes(sequence, palindrome_len, threshold, max_distance):
     seq = Seq(sequence)
@@ -204,9 +232,6 @@ def parse_imperfect_palindormes(sequence, palindrome_len, threshold, max_distanc
             gap += 1
     
     return str(palindrome_list[0])
-
-
-
 
 
 
