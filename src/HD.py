@@ -49,6 +49,13 @@ def parse_arg():
         type=str,
         help="path&name of output file (without extension)",
     )
+    parser.add_argument(
+        "--search_all",
+        "-all",
+        metavar="",
+        type=bool,
+        help="option to parse for all hairpins that are within thresholds",
+    )
 
     args = parser.parse_args()
     return (
@@ -57,32 +64,48 @@ def parse_arg():
         args.loop_length,
         args.threshold_GC,
         args.output_name,
+        args.search_all
     )
+
 
 
 def main():
     # defining global variables with CL arguments as a values
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
-    fasta_file, stem_length, loop_length, threshold_GC, output_names = parse_arg()
-    # creating df instead of lists
-    seq = read_file(fasta_file)
-    if type(seq) != dict:
-        final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-    else:
+    fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
+    print(search_all)
+    if search_all == True:
+        seq = read_file(fasta_file)
         dfs = []
         for id,subseq in seq.items():
-            final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+            final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
             final_df = final_df.assign(ID = id)
             final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
             dfs.append(final_df)
         merged_df = pd.concat(dfs, ignore_index=True)
         print(merged_df)
-    if len(final_df) == 0:
-        sys.exit("Hairpins were not found!")
+        merged_df.to_csv(f'{output_names}.csv')
+        print(f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!")
     else:
-        print(final_df)
-        final_df.to_csv(f'{output_names}.csv')
-        f"\n  Results are stored in {output_names}.xlsx\n  Please use different output name to avoid overwriting data!"
+        # creating df instead of lists
+        seq = read_file(fasta_file)
+        if type(seq) != dict:
+            final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+        else:
+            dfs = []
+            for id,subseq in seq.items():
+                final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+                final_df = final_df.assign(ID = id)
+                final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
+                dfs.append(final_df)
+            merged_df = pd.concat(dfs, ignore_index=True)
+            print(merged_df)
+        if len(final_df) == 0:
+            sys.exit("Hairpins were not found!")
+        else:
+            print(final_df)
+            final_df.to_csv(f'{output_names}.csv')
+            f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!"
 
 
 
@@ -123,7 +146,7 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
-    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2', 'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
+    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
     start = 0
     end = ir_length
@@ -155,6 +178,8 @@ def parse_seq(seq, ir_length, loop_length):
                         # IRs
                             str(seq[start:end]),
                             str(seq[ir2_length+1: ir2_length + ir_length + 1]),
+                        # Loop
+                            str(seq[end:ir2_length]),
                         # entire hairpin
                             str(seq[start : ir2_length +ir_length+ 1]),
                         # extended hairpin region
@@ -172,6 +197,7 @@ def parse_seq(seq, ir_length, loop_length):
                         # IRs
                             str(seq[start:end+1]),
                             str(seq[ir2_length: ir2_length + ir_length + 1]),
+                            str(seq[end:ir2_length]),
                         # entire hairpin
                             str(seq[start : ir2_length +ir_length+ 1]),
                         # extended hairpin region
@@ -193,13 +219,14 @@ def parse_seq(seq, ir_length, loop_length):
             return seqs_df
         
 
-def full_search(data,loop_len = 15, stem_len = 15, treshold = 0):
+def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
     df = pd.DataFrame()
     for i in range(loop_len):
         for j in range(4,stem_len):
-            for k in range(treshold,stem_len):
+            for k in range(round(stem_len/2),stem_len):
                 try:
                     iter_df = parse_seq(seq = data,loop_length = i,ir_length = j)
+                    filtered = filter_df(df,threshold_GC=k)
                     df = pd.concat([df,iter_df],axis = 0)
                 except IndexError:
                     pass
@@ -260,10 +287,15 @@ def filter_df(df_to_filter,threshold_GC):
     Returns:
          : filtered by threshold
     """
-    mask = (df_to_filter['IR1'].str.count('C') + df_to_filter['IR1'].str.count('G')) >= threshold_GC
+    try:
+        mask = (df_to_filter['IR1'].str.count('C') + df_to_filter['IR1'].str.count('G')) >= threshold_GC
 
     # Apply the mask to filter the dataframe
-    filtered_df = df_to_filter[mask]
-    return filtered_df
+        filtered_df = df_to_filter[mask]
+        return filtered_df
+    except KeyError:
+        pass
+
+
 if __name__ == "__main__":
     main()
