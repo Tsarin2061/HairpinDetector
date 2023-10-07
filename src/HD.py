@@ -5,6 +5,7 @@ import argparse
 import sys
 from Bio.Seq import Seq
 from Bio import SeqIO
+import os
 import pandas as pd
 
 
@@ -73,18 +74,25 @@ def main():
     # defining global variables with CL arguments as a values
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
-    print(search_all)
     if search_all == True:
         seq = read_file(fasta_file)
-        dfs = []
         for id,subseq in seq.items():
             final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
             final_df = final_df.assign(ID = id)
             final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
-            dfs.append(final_df)
+            final_df.to_csv(f'{output_names}_{id}.csv')
+
+        directory_path = os.path.dirname(output_names)
+        contents = os.listdir(directory_path)
+        print(directory_path)
+        dfs = []
+        for file in contents:
+            if os.path.isfile(f"{directory_path}/{file}"):
+                df_to_merge = pd.read_csv(f"{directory_path}/{file}")
+                dfs.append(df_to_merge)
+
         merged_df = pd.concat(dfs, ignore_index=True)
-        print(merged_df)
-        merged_df.to_csv(f'{output_names}.csv')
+        merged_df.to_csv(f'{directory_path}/all_merged.csv')
         print(f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!")
     else:
         # creating df instead of lists
@@ -272,10 +280,6 @@ def compare_dna_sequences(seq1, seq2):
             mismatches += 1
             
     return mismatches
-
-
-
-
 
 
 def filter_df(df_to_filter,threshold_GC):
