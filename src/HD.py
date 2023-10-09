@@ -173,8 +173,8 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
+    print("...parse_seq()...")
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
-    print('seq object heeereee')
     start = 0
     end = ir_length
     ir2_length = ir_length
@@ -246,52 +246,20 @@ def parse_seq(seq, ir_length, loop_length):
         
 
 
-def process_chunk(params):
-    data, i_range, j_range, k_range, threshold = params
-    df_chunk = pd.DataFrame()
-    for i in i_range:
-        for j in j_range:
-            for k in k_range:
+def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
+    df = pd.DataFrame()
+    for i in range(loop_len):
+        for j in range(4,stem_len):
+            for k in range(round(stem_len/2),stem_len):
                 try:
-                    print('PARSING')
-                    iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
-                    print("filtering...")
-                    filtered = filter_df(iter_df, threshold_GC=k)
-                    print(f"recorded:\n {filtered}\n NEXT!")
-                    df_chunk = pd.concat([df_chunk, filtered], axis=0)
+                    iter_df = parse_seq(seq = data,loop_length = i,ir_length = j)
+                    filtered = filter_df(iter_df,threshold_GC=k)
+                    df = pd.concat([df,filtered],axis = 0)
                 except IndexError:
                     pass
-    return df_chunk
-
-def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=5):
-    print('started full search')
-    df = pd.DataFrame()
-    params_list = []
-    
-    if loop_len <= 0 or num_processes <= 0:
-        print("Error: loop_len and num_processes must be greater than zero.")
-        return df  # Return an empty DataFrame to avoid further errors.
-
-    # Split the work into smaller chunks for parallel processing
-    chunk_size = loop_len // num_processes
-    if chunk_size == 0:
-        chunk_size = 1  # Set a minimum chunk size of 1 if loop_len is small compared to num_processes
-    
-    for i in range(0, loop_len, chunk_size):
-        i_range = range(i, min(i + chunk_size, loop_len))
-        params_list.append((data, i_range, range(4, stem_len), range(round(stem_len / 2), stem_len), threshold))
-
-    with Pool(num_processes) as pool:
-        print('processing chunk!')
-        results = pool.map(process_chunk, params_list)
-
-    for result in results:
-        df = pd.concat([df, result], axis=0)
-
-
     df = df.drop_duplicates(subset="Hairpin_region")
     df.reset_index(inplace=True)
-    df.drop(columns="index", inplace=True)
+    df.drop(columns="index",inplace=True)
     return df
 
 
