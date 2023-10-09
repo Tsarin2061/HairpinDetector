@@ -88,8 +88,6 @@ def main():
         for id, subseq in seq.items():
             print(f"Working on {id}...")
             final_df = full_search(subseq, stem_length, loop_length).reset_index().drop(columns='index')
-            final_df = final_df.assign(ID=id)
-            final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
             # Save the results to a CSV file with a unique name based on the sequence ID
             final_df.to_csv(f'{output_names}_{id}.csv')
             print(f"{id} done!\nNEXT!")     
@@ -175,6 +173,7 @@ def parse_seq(seq, ir_length, loop_length):
     """
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
+    print('seq object heeereee')
     start = 0
     end = ir_length
     ir2_length = ir_length
@@ -253,7 +252,9 @@ def process_chunk(params):
         for j in j_range:
             for k in k_range:
                 try:
+                    print('PARSING')
                     iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
+                    print("filtering...")
                     filtered = filter_df(iter_df, threshold_GC=k)
                     print(f"recorded:\n {filtered}\n NEXT!")
                     df_chunk = pd.concat([df_chunk, filtered], axis=0)
