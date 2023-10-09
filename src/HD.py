@@ -87,7 +87,9 @@ def main():
         start = time.time()
         for id, subseq in seq.items():
             print(f"Working on {id}...")
-            final_df = full_search(subseq, stem_length, loop_length).reset_index().drop(columns='index')
+            subseq = str(subseq).replace('N','')
+
+            final_df = full_search(Seq(subseq), stem_length, loop_length).reset_index().drop(columns='index')
             # Save the results to a CSV file with a unique name based on the sequence ID
             final_df.to_csv(f'{output_names}_{id}.csv')
             print(f"{id} done!\nNEXT!")     
@@ -172,7 +174,6 @@ def parse_seq(seq, ir_length, loop_length):
         seqs_df : a banch of information about hairpins.
     """
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
-    seq = Seq(seq)
     print('seq object heeereee')
     start = 0
     end = ir_length
@@ -211,8 +212,8 @@ def parse_seq(seq, ir_length, loop_length):
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
-                            f"{loop_length}",
-                            f"{ir_length}"
+                            f"{act_loop_len}",
+                            f"{ir_length+1}"
                             
                         ]
                 elif seq[start:end+1] == Seq(seq[ir2_length : ir2_length + ir_length + 1]).reverse_complement():
@@ -229,8 +230,8 @@ def parse_seq(seq, ir_length, loop_length):
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
-                            f"{loop_length}",
-                            f"{ir_length}"     
+                            f"{act_loop_len-1}",
+                            f"{ir_length+1}"
                         ]
 
                 start += 1
@@ -263,6 +264,7 @@ def process_chunk(params):
     return df_chunk
 
 def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=5):
+    print('started full search')
     df = pd.DataFrame()
     params_list = []
     
@@ -285,6 +287,7 @@ def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=5):
 
     for result in results:
         df = pd.concat([df, result], axis=0)
+
 
     df = df.drop_duplicates(subset="Hairpin_region")
     df.reset_index(inplace=True)
