@@ -262,7 +262,7 @@ def process_chunk(params):
                     pass
     return df_chunk
 
-def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=6):
+def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=5):
     df = pd.DataFrame()
     params_list = []
     
