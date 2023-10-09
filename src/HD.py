@@ -79,7 +79,9 @@ def main():
     
     if search_all:
         # Read sequences from the input file
+        print("reading file")
         seq = read_file(fasta_file)
+        print(f"finished seq{type(seq)}")
         
         # Process each sequence separately and save results to individual CSV files
         start = time.time()
@@ -92,20 +94,20 @@ def main():
             final_df.to_csv(f'{output_names}_{id}.csv')
             print(f"{id} done!\nNEXT!")     
         end = time.time()
-        print(end - start)
+        print(f"{(end - start)/60} min")
         # Merge all individual CSV files into one
-        directory_path = os.path.dirname(output_names)
-        contents = os.listdir(directory_path)
+        # directory_path = os.path.dirname(output_names)
+        # contents = os.listdir(directory_path)
         
-        dfs = []
-        for file in contents:
-            if os.path.isfile(f"{directory_path}/{file}"):
-                df_to_merge = pd.read_csv(f"{directory_path}/{file}")
-                dfs.append(df_to_merge)
+        # dfs = []
+        # for file in contents:
+        #     if os.path.isfile(f"{directory_path}/{file}"):
+        #         df_to_merge = pd.read_csv(f"{directory_path}/{file}")
+        #         dfs.append(df_to_merge)
 
-        merged_df = pd.concat(dfs, ignore_index=True)
-        # Save the merged results to a single CSV file
-        merged_df.to_csv(f'{directory_path}/all_merged.csv')
+        # merged_df = pd.concat(dfs, ignore_index=True)
+        # # Save the merged results to a single CSV file
+        # merged_df.to_csv(f'{directory_path}/all_merged.csv')
         print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
     else:
         # Read sequences from the input file
@@ -121,14 +123,12 @@ def main():
                 final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
                 dfs.append(final_df)
             merged_df = pd.concat(dfs, ignore_index=True)
-            print(merged_df)
         else:
             final_df = filter_df(parse_seq(seq, stem_length, loop_length), threshold_GC).reset_index().drop(columns='index')
 
         if len(final_df) == 0:
             sys.exit("Hairpins were not found!")
         else:
-            print(final_df)
             # Save the results to a CSV file
             final_df.to_csv(f'{output_names}.csv')
             print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
@@ -179,8 +179,7 @@ def parse_seq(seq, ir_length, loop_length):
     end = ir_length
     ir2_length = ir_length
     # list with coordinates and sequences
-    list = []
-    while start != len(seq) - 2 * ir_length + loop_length:
+    while end != len(seq):
         act_loop_len = (ir2_length + 1) - end
         if seq[start:end] != Seq(seq[ir2_length+1 :ir2_length + ir_length + 1]).reverse_complement():
             ir2_length += 1
@@ -242,7 +241,7 @@ def parse_seq(seq, ir_length, loop_length):
             else:
               ir2_length += 1
               pass
-        if start == len(seq) - 2 * ir_length + loop_length:
+        if end == len(seq):
             return seqs_df
         
 
@@ -265,13 +264,22 @@ def process_chunk(params):
 def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=6):
     df = pd.DataFrame()
     params_list = []
+    
+    if loop_len <= 0 or num_processes <= 0:
+        print("Error: loop_len and num_processes must be greater than zero.")
+        return df  # Return an empty DataFrame to avoid further errors.
+
     # Split the work into smaller chunks for parallel processing
     chunk_size = loop_len // num_processes
+    if chunk_size == 0:
+        chunk_size = 1  # Set a minimum chunk size of 1 if loop_len is small compared to num_processes
+    
     for i in range(0, loop_len, chunk_size):
         i_range = range(i, min(i + chunk_size, loop_len))
         params_list.append((data, i_range, range(4, stem_len), range(round(stem_len / 2), stem_len), threshold))
 
     with Pool(num_processes) as pool:
+        print('processing chunk!')
         results = pool.map(process_chunk, params_list)
 
     for result in results:
@@ -283,35 +291,6 @@ def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=6):
     return df
 
 
-
-# def process_iteration(params):
-#     data, i, j, k, threshold = params
-#     try:
-#         iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
-#         filtered = filter_df(iter_df, threshold_GC=k)
-#         return filtered
-#     except IndexError:
-#         return pd.DataFrame()
-
-# def full_search(data, loop_len=15, stem_len=15, threshold=0):
-#     df = pd.DataFrame()
-#     params_list = []
-
-#     for i in range(loop_len):
-#         for j in range(4, stem_len):
-#             for k in range(round(stem_len / 2), stem_len):
-#                 params_list.append((data, i, j, k, threshold))
-
-#     with ThreadPoolExecutor() as executor:
-#         results = list(executor.map(process_iteration, params_list))
-
-#     for result in results:
-#         df = pd.concat([df, result], axis=0)
-
-#     df = df.drop_duplicates(subset="Hairpin_region")
-#     df.reset_index(inplace=True)
-#     df.drop(columns="index", inplace=True)
-#     return df
 
 
 
