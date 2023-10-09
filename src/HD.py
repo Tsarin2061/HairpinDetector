@@ -84,13 +84,13 @@ def main():
         # Process each sequence separately and save results to individual CSV files
         start = time.time()
         for id, subseq in seq.items():
+            print(f"Working on {id}...")
             final_df = full_search(subseq, stem_length, loop_length).reset_index().drop(columns='index')
             final_df = final_df.assign(ID=id)
             final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
-            
             # Save the results to a CSV file with a unique name based on the sequence ID
             final_df.to_csv(f'{output_names}_{id}.csv')
-            
+            print(f"{id} done!\nNEXT!")     
         end = time.time()
         print(end - start)
         # Merge all individual CSV files into one
@@ -104,7 +104,6 @@ def main():
                 dfs.append(df_to_merge)
 
         merged_df = pd.concat(dfs, ignore_index=True)
-        
         # Save the merged results to a single CSV file
         merged_df.to_csv(f'{directory_path}/all_merged.csv')
         print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
@@ -257,6 +256,7 @@ def process_chunk(params):
                 try:
                     iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
                     filtered = filter_df(iter_df, threshold_GC=k)
+                    print(f"recorded:\n {filtered}\n NEXT!")
                     df_chunk = pd.concat([df_chunk, filtered], axis=0)
                 except IndexError:
                     pass
