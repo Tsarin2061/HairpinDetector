@@ -7,6 +7,10 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 import os
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+import time
+from multiprocessing import Pool
+
 
 
 def parse_arg():
@@ -69,22 +73,30 @@ def parse_arg():
     )
 
 
-
 def main():
-    # defining global variables with CL arguments as a values
-    # global fasta_file, stem_length, loop_length, threshold_GC, output_names
+    # Parse command-line arguments
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
-    if search_all == True:
+    
+    if search_all:
+        # Read sequences from the input file
         seq = read_file(fasta_file)
-        for id,subseq in seq.items():
-            final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
-            final_df = final_df.assign(ID = id)
+        
+        # Process each sequence separately and save results to individual CSV files
+        start = time.time()
+        for id, subseq in seq.items():
+            final_df = full_search(subseq, stem_length, loop_length).reset_index().drop(columns='index')
+            final_df = final_df.assign(ID=id)
             final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
+            
+            # Save the results to a CSV file with a unique name based on the sequence ID
             final_df.to_csv(f'{output_names}_{id}.csv')
-
+            
+        end = time.time()
+        print(end - start)
+        # Merge all individual CSV files into one
         directory_path = os.path.dirname(output_names)
         contents = os.listdir(directory_path)
-        print(directory_path)
+        
         dfs = []
         for file in contents:
             if os.path.isfile(f"{directory_path}/{file}"):
@@ -92,28 +104,36 @@ def main():
                 dfs.append(df_to_merge)
 
         merged_df = pd.concat(dfs, ignore_index=True)
+        
+        # Save the merged results to a single CSV file
         merged_df.to_csv(f'{directory_path}/all_merged.csv')
-        print(f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!")
+        print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
     else:
-        # creating df instead of lists
+        # Read sequences from the input file
         seq = read_file(fasta_file)
-        if type(seq) != dict:
-            final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-        else:
+        
+        # Process sequences and filter the results based on threshold
+        if isinstance(seq, dict):
             dfs = []
-            for id,subseq in seq.items():
-                final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-                final_df = final_df.assign(ID = id)
+            
+            for id, subseq in seq.items():
+                final_df = filter_df(parse_seq(subseq, stem_length, loop_length), threshold_GC).reset_index().drop(columns='index')
+                final_df = final_df.assign(ID=id)
                 final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
                 dfs.append(final_df)
             merged_df = pd.concat(dfs, ignore_index=True)
             print(merged_df)
+        else:
+            final_df = filter_df(parse_seq(seq, stem_length, loop_length), threshold_GC).reset_index().drop(columns='index')
+
         if len(final_df) == 0:
             sys.exit("Hairpins were not found!")
         else:
             print(final_df)
+            # Save the results to a CSV file
             final_df.to_csv(f'{output_names}.csv')
-            f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!"
+            print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
+
 
 
 
@@ -227,46 +247,72 @@ def parse_seq(seq, ir_length, loop_length):
             return seqs_df
         
 
-def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
-    df = pd.DataFrame()
-    for i in range(loop_len):
-        for j in range(4,stem_len):
-            for k in range(round(stem_len/2),stem_len):
+
+def process_chunk(params):
+    data, i_range, j_range, k_range, threshold = params
+    df_chunk = pd.DataFrame()
+    for i in i_range:
+        for j in j_range:
+            for k in k_range:
                 try:
-                    iter_df = parse_seq(seq = data,loop_length = i,ir_length = j)
-                    filtered = filter_df(df,threshold_GC=k)
-                    df = pd.concat([df,iter_df],axis = 0)
+                    iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
+                    filtered = filter_df(iter_df, threshold_GC=k)
+                    df_chunk = pd.concat([df_chunk, filtered], axis=0)
                 except IndexError:
                     pass
+    return df_chunk
+
+def full_search(data, loop_len=15, stem_len=15, threshold=0, num_processes=6):
+    df = pd.DataFrame()
+    params_list = []
+    # Split the work into smaller chunks for parallel processing
+    chunk_size = loop_len // num_processes
+    for i in range(0, loop_len, chunk_size):
+        i_range = range(i, min(i + chunk_size, loop_len))
+        params_list.append((data, i_range, range(4, stem_len), range(round(stem_len / 2), stem_len), threshold))
+
+    with Pool(num_processes) as pool:
+        results = pool.map(process_chunk, params_list)
+
+    for result in results:
+        df = pd.concat([df, result], axis=0)
+
     df = df.drop_duplicates(subset="Hairpin_region")
     df.reset_index(inplace=True)
-    df.drop(columns="index",inplace=True)
+    df.drop(columns="index", inplace=True)
     return df
 
-def parse_imperfect_palindormes(sequence, palindrome_len, threshold, max_distance):
-    seq = Seq(sequence)
-    palindrome_list = []
-    
-    for i in range(len(seq) - palindrome_len + 1):
-        position1_start = i
-        position1_end = i + palindrome_len
-        position2_start = i + palindrome_len
-        position2_end = i + palindrome_len * 2
-        gap = 0
-        
-        while position2_end <= len(seq) and gap <= max_distance:
-            first = seq[position1_start:position1_end]
-            second = str(Seq(seq[position2_start:position2_end]).reverse_complement())
-            mismatches = compare_dna_sequences(str(first), str(second))
-            
-            if mismatches <= threshold:
-                palindrome_list.append(seq[position1_start:position2_end])
-            
-            position2_start += 1
-            position2_end += 1
-            gap += 1
-    
-    return str(palindrome_list[0])
+
+
+# def process_iteration(params):
+#     data, i, j, k, threshold = params
+#     try:
+#         iter_df = parse_seq(seq=data, ir_length=j, loop_length=i)
+#         filtered = filter_df(iter_df, threshold_GC=k)
+#         return filtered
+#     except IndexError:
+#         return pd.DataFrame()
+
+# def full_search(data, loop_len=15, stem_len=15, threshold=0):
+#     df = pd.DataFrame()
+#     params_list = []
+
+#     for i in range(loop_len):
+#         for j in range(4, stem_len):
+#             for k in range(round(stem_len / 2), stem_len):
+#                 params_list.append((data, i, j, k, threshold))
+
+#     with ThreadPoolExecutor() as executor:
+#         results = list(executor.map(process_iteration, params_list))
+
+#     for result in results:
+#         df = pd.concat([df, result], axis=0)
+
+#     df = df.drop_duplicates(subset="Hairpin_region")
+#     df.reset_index(inplace=True)
+#     df.drop(columns="index", inplace=True)
+#     return df
+
 
 
 
