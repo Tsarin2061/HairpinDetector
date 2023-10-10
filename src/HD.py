@@ -75,46 +75,46 @@ def main():
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
     print('start')
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
-    if search_all == True:
-        print('reading file')
-        seq = read_file(fasta_file)
-        print('finishing reading')
-        for id,subseq in seq.items():
-            final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
-            final_df.to_csv(f'{output_names}_{id}.csv')
 
-        # directory_path = os.path.dirname(output_names)
-        # contents = os.listdir(directory_path)
-        # print(directory_path)
-        # dfs = []
-        # for file in contents:
-        #     if os.path.isfile(f"{directory_path}/{file}"):
-        #         df_to_merge = pd.read_csv(f"{directory_path}/{file}")
-        #         dfs.append(df_to_merge)
+    print('reading file')
+    seq = read_file(fasta_file)
+    print('finishing reading')
+    for id,subseq in seq.items():
+        final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
+        final_df.to_csv(f'{output_names}_{id}.csv')
+        print(f"\n  Results are stored in {output_names}_{id}.csv\n  Please use different output name to avoid overwriting data!")
 
-        # merged_df = pd.concat(dfs, ignore_index=True)
-        # merged_df.to_csv(f'{directory_path}/all_merged.csv')
-        print(f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!")
-    else:
-        # creating df instead of lists
-        seq = read_file(fasta_file)
-        if type(seq) != dict:
-            final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-        else:
-            dfs = []
-            for id,subseq in seq.items():
-                final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
-                final_df = final_df.assign(ID = id)
-                final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
-                dfs.append(final_df)
-            merged_df = pd.concat(dfs, ignore_index=True)
-            print(merged_df)
-        if len(final_df) == 0:
-            sys.exit("Hairpins were not found!")
-        else:
-            print(final_df)
-            final_df.to_csv(f'{output_names}.csv')
-            f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!"
+    #     # directory_path = os.path.dirname(output_names)
+    #     # contents = os.listdir(directory_path)
+    #     # print(directory_path)
+    #     # dfs = []
+    #     # for file in contents:
+    #     #     if os.path.isfile(f"{directory_path}/{file}"):
+    #     #         df_to_merge = pd.read_csv(f"{directory_path}/{file}")
+    #     #         dfs.append(df_to_merge)
+
+    #     # merged_df = pd.concat(dfs, ignore_index=True)
+    #     # merged_df.to_csv(f'{directory_path}/all_merged.csv')
+    # else:
+    #     # creating df instead of lists
+    #     seq = read_file(fasta_file)
+    #     if type(seq) != dict:
+    #         final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+    #     else:
+    #         dfs = []
+    #         for id,subseq in seq.items():
+    #             final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+    #             final_df = final_df.assign(ID = id)
+    #             final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
+    #             dfs.append(final_df)
+    #         merged_df = pd.concat(dfs, ignore_index=True)
+    #         print(merged_df)
+    #     if len(final_df) == 0:
+    #         sys.exit("Hairpins were not found!")
+    #     else:
+    #         print(final_df)
+    #         final_df.to_csv(f'{output_names}.csv')
+    #         f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!"
 
 
 
