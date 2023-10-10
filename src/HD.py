@@ -155,6 +155,7 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
+    print('here we go!')
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
     start = 0
