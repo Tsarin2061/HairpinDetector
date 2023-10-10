@@ -75,6 +75,7 @@ def parse_arg():
 
 def main():
     # Parse command-line arguments
+    print('hi there!')
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
     
     if search_all:
@@ -110,6 +111,7 @@ def main():
         # merged_df.to_csv(f'{directory_path}/all_merged.csv')
         print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
     else:
+        print('no way')
         # Read sequences from the input file
         seq = read_file(fasta_file)
         
@@ -298,5 +300,5 @@ def filter_df(df_to_filter,threshold_GC):
         pass
 
 
-if __name__ == "__main__":
-    main()
+
+main()
