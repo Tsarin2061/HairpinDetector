@@ -7,10 +7,6 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 import os
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
-import time
-from multiprocessing import Pool
-
 
 
 def parse_arg():
@@ -73,33 +69,23 @@ def parse_arg():
     )
 
 
-def main():
-    # Parse command-line arguments
-    print('hi there!')
-    fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
-    
-    if search_all:
-        # Read sequences from the input file
-        print("reading file")
-        seq = read_file(fasta_file)
-        print(f"finished seq{type(seq)}")
-        
-        # Process each sequence separately and save results to individual CSV files
-        start = time.time()
-        for id, subseq in seq.items():
-            print(f"Working on {id}...")
-            subseq = str(subseq).replace('N','')
 
-            final_df = full_search(Seq(subseq), stem_length, loop_length).reset_index().drop(columns='index')
-            # Save the results to a CSV file with a unique name based on the sequence ID
+def main():
+    # defining global variables with CL arguments as a values
+    # global fasta_file, stem_length, loop_length, threshold_GC, output_names
+    print('start')
+    fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
+    if search_all == True:
+        print('reading file')
+        seq = read_file(fasta_file)
+        print('finishing reading')
+        for id,subseq in seq.items():
+            final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
             final_df.to_csv(f'{output_names}_{id}.csv')
-            print(f"{id} done!\nNEXT!")     
-        end = time.time()
-        print(f"{(end - start)/60} min")
-        # Merge all individual CSV files into one
+
         # directory_path = os.path.dirname(output_names)
         # contents = os.listdir(directory_path)
-        
+        # print(directory_path)
         # dfs = []
         # for file in contents:
         #     if os.path.isfile(f"{directory_path}/{file}"):
@@ -107,34 +93,28 @@ def main():
         #         dfs.append(df_to_merge)
 
         # merged_df = pd.concat(dfs, ignore_index=True)
-        # # Save the merged results to a single CSV file
         # merged_df.to_csv(f'{directory_path}/all_merged.csv')
-        print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
+        print(f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!")
     else:
-        print('no way')
-        # Read sequences from the input file
+        # creating df instead of lists
         seq = read_file(fasta_file)
-        
-        # Process sequences and filter the results based on threshold
-        if isinstance(seq, dict):
+        if type(seq) != dict:
+            final_df = filter_df(parse_seq(seq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+        else:
             dfs = []
-            
-            for id, subseq in seq.items():
-                final_df = filter_df(parse_seq(subseq, stem_length, loop_length), threshold_GC).reset_index().drop(columns='index')
-                final_df = final_df.assign(ID=id)
+            for id,subseq in seq.items():
+                final_df = filter_df(parse_seq(subseq, stem_length,loop_length),threshold_GC).reset_index().drop(columns = 'index')
+                final_df = final_df.assign(ID = id)
                 final_df = final_df[["ID"] + [col for col in final_df.columns if col != 'ID']]
                 dfs.append(final_df)
             merged_df = pd.concat(dfs, ignore_index=True)
-        else:
-            final_df = filter_df(parse_seq(seq, stem_length, loop_length), threshold_GC).reset_index().drop(columns='index')
-
+            print(merged_df)
         if len(final_df) == 0:
             sys.exit("Hairpins were not found!")
         else:
-            # Save the results to a CSV file
+            print(final_df)
             final_df.to_csv(f'{output_names}.csv')
-            print(f"\nResults are stored in {output_names}.csv\nPlease use different output name to avoid overwriting data!")
-
+            f"\n  Results are stored in {output_names}.csv\n  Please use different output name to avoid overwriting data!"
 
 
 
@@ -175,13 +155,14 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
-    print("...parse_seq()...")
     seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
+    seq = Seq(seq)
     start = 0
     end = ir_length
     ir2_length = ir_length
     # list with coordinates and sequences
-    while end != len(seq):
+    list = []
+    while start != len(seq) - 2 * ir_length + loop_length:
         act_loop_len = (ir2_length + 1) - end
         if seq[start:end] != Seq(seq[ir2_length+1 :ir2_length + ir_length + 1]).reverse_complement():
             ir2_length += 1
@@ -214,8 +195,8 @@ def parse_seq(seq, ir_length, loop_length):
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
-                            f"{act_loop_len}",
-                            f"{ir_length+1}"
+                            f"{loop_length}",
+                            f"{ir_length}"
                             
                         ]
                 elif seq[start:end+1] == Seq(seq[ir2_length : ir2_length + ir_length + 1]).reverse_complement():
@@ -232,8 +213,8 @@ def parse_seq(seq, ir_length, loop_length):
                             str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
-                            f"{act_loop_len-1}",
-                            f"{ir_length+1}"
+                            f"{loop_length}",
+                            f"{ir_length}"     
                         ]
 
                 start += 1
@@ -243,10 +224,9 @@ def parse_seq(seq, ir_length, loop_length):
             else:
               ir2_length += 1
               pass
-        if end == len(seq):
+        if start == len(seq) - 2 * ir_length + loop_length:
             return seqs_df
         
-
 
 def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
     df = pd.DataFrame()
@@ -265,20 +245,6 @@ def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
     return df
 
 
-
-
-
-
-def compare_dna_sequences(seq1, seq2):
-    if len(seq1) != len(seq2):
-        raise ValueError("Input sequences must have the same length")
-    
-    mismatches = 0
-    for base1, base2 in zip(seq1, seq2):
-        if base1 != base2:
-            mismatches += 1
-            
-    return mismatches
 
 
 def filter_df(df_to_filter,threshold_GC):
@@ -300,5 +266,5 @@ def filter_df(df_to_filter,threshold_GC):
         pass
 
 
-
-main()
+if __name__ == "__main__":
+    main()
