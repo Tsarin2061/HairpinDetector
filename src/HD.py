@@ -156,7 +156,7 @@ def parse_seq(seq, ir_length, loop_length):
         seqs_df : a banch of information about hairpins.
     """
     print('here we go!')
-    seqs_df = pd.DataFrame(columns =['Coordinates','IR1', 'IR2','loop_seq' ,'Hairpin_region', 'Adjacent_region(30nt)','AR_coordinates','loop_len','stem_len'])
+    seqs_df = pd.DataFrame(columns =['Coordinates','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
     start = 0
     end = ir_length
@@ -186,14 +186,6 @@ def parse_seq(seq, ir_length, loop_length):
                         # coordinates
                             f"{start}-{ir2_length + ir_length +1}",
                         # IRs
-                            str(seq[start:end]),
-                            str(seq[ir2_length+1: ir2_length + ir_length + 1]),
-                        # Loop
-                            str(seq[end:ir2_length]),
-                        # entire hairpin
-                            str(seq[start : ir2_length +ir_length+ 1]),
-                        # extended hairpin region
-                            str(seq[start-15:   ir2_length +ir_length+ 1+15]),
                         # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
                             f"{loop_length}",
@@ -205,14 +197,6 @@ def parse_seq(seq, ir_length, loop_length):
                         # coordinates
                             f"{start}-{ir2_length + ir_length +1}",
                         # IRs
-                            str(seq[start:end+1]),
-                            str(seq[ir2_length: ir2_length + ir_length + 1]),
-                            str(seq[end:ir2_length]),
-                        # entire hairpin
-                            str(seq[start : ir2_length +ir_length+ 1]),
-                        # extended hairpin region
-                            str(seq[start-15:   ir2_length +ir_length+ 1+15]),
-                        # coordinates #2
                             f"{start-15}-{ir2_length+ir_length+1+15}",
                             f"{loop_length}",
                             f"{ir_length}"     
@@ -236,11 +220,10 @@ def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
             for k in range(round(stem_len/2),stem_len):
                 try:
                     iter_df = parse_seq(seq = data,loop_length = i,ir_length = j)
-                    filtered = filter_df(iter_df,threshold_GC=k)
-                    df = pd.concat([df,filtered],axis = 0)
+                    df = pd.concat([df,iter_df],axis = 0)
                 except IndexError:
                     pass
-    df = df.drop_duplicates(subset="Hairpin_region")
+    df = df.drop_duplicates()
     df.reset_index(inplace=True)
     df.drop(columns="index",inplace=True)
     return df
