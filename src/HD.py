@@ -7,6 +7,7 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 import os
 import pandas as pd
+import logging
 
 
 def parse_arg():
@@ -73,16 +74,15 @@ def parse_arg():
 def main():
     # defining global variables with CL arguments as a values
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
-    print('start')
+    logging.basicConfig(level=logging.DEBUG,filemode='w')
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
-
-    print('reading file')
     seq = read_file(fasta_file)
-    print('finishing reading')
     for id,subseq in seq.items():
         final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
+        logging.debug(f"Full search of the {id} is done")
+
         final_df.to_csv(f'{output_names}_{id}.csv')
-        print(f"\n  Results are stored in {output_names}_{id}.csv\n  Please use different output name to avoid overwriting data!")
+        logging.debug(f"\n  Results are stored in {output_names}_{id}.csv\n  Please use different output name to avoid overwriting data!")
 
     #     # directory_path = os.path.dirname(output_names)
     #     # contents = os.listdir(directory_path)
@@ -119,13 +119,18 @@ def main():
 
 
 def read_file(path):
+    logging.debug('Reading of the file')
+
     dict = {}
     records = list(SeqIO.parse(path,"fasta"))
     if len(records) == 1:
+        logging.debug('Reading finished')
+
         return records[len(records)-1].seq
     else:
         for i in records:
             dict[i.id] = i.seq
+        logging.debug('Reading finished')
         return dict
 
 
@@ -155,7 +160,7 @@ def parse_seq(seq, ir_length, loop_length):
     Returns:
         seqs_df : a banch of information about hairpins.
     """
-    print('here we go!')
+    logging.debug(f'Looking for hairping with parameters: stem - {ir_length}, loop - {loop_length}')
     seqs_df = pd.DataFrame(columns =['Coordinates','AR_coordinates','loop_len','stem_len'])
     seq = Seq(seq)
     start = 0
@@ -210,10 +215,12 @@ def parse_seq(seq, ir_length, loop_length):
               ir2_length += 1
               pass
         if start == len(seq) - 2 * ir_length + loop_length:
+            logging.debug(f'Hairpins with parameters: stem - {ir_length}, loop - {loop_length}:WRITEN TO DF')
             return seqs_df
         
 
 def full_search(data,loop_len = 15, stem_len = 15, threshold = 0):
+    logging.debug(f'Full_search is running: Thresholds: loop = {loop_len}, stem = {stem_len}')
     df = pd.DataFrame()
     for i in range(loop_len):
         for j in range(4,stem_len):
