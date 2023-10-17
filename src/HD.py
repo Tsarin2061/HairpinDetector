@@ -74,15 +74,15 @@ def parse_arg():
 def main():
     # defining global variables with CL arguments as a values
     # global fasta_file, stem_length, loop_length, threshold_GC, output_names
-    logging.basicConfig(level=logging.DEBUG,filemode='w')
+    logging.basicConfig(level=logging.DEBUG, filemode='w',filename='HD_run.log')
     fasta_file, stem_length, loop_length, threshold_GC, output_names, search_all = parse_arg()
     seq = read_file(fasta_file)
     for id,subseq in seq.items():
         final_df = full_search(subseq, stem_length,loop_length).reset_index().drop(columns = 'index')
-        logging.debug(f"Full search of the {id} is done")
+        logging.info(f"Full search of the {id} is done")
 
         final_df.to_csv(f'{output_names}_{id}.csv')
-        logging.debug(f"\n  Results are stored in {output_names}_{id}.csv\n  Please use different output name to avoid overwriting data!")
+        logging.info(f"\n  Results are stored in {output_names}_{id}.csv\n  Please use different output name to avoid overwriting data!")
 
     #     # directory_path = os.path.dirname(output_names)
     #     # contents = os.listdir(directory_path)
@@ -119,7 +119,7 @@ def main():
 
 
 def read_file(path):
-    logging.debug('Reading of the file')
+    logging.info('Reading of the file')
 
     dict = {}
     records = list(SeqIO.parse(path,"fasta"))

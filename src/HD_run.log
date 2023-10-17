@@ -1,0 +1,72 @@
+INFO:root:Reading of the file
+DEBUG:root:Reading finished
+DEBUG:root:Full_search is running: Thresholds: loop = 5, stem = 5
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+INFO:root:Full search of the NM_006231.4 is done
+INFO:root:
+  Results are stored in final_NM_006231.4.csv
+  Please use different output name to avoid overwriting data!
+DEBUG:root:Full_search is running: Thresholds: loop = 5, stem = 5
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 0
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 0:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 1
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 1:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 2
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 2:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 3
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 3:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+DEBUG:root:Looking for hairping with parameters: stem - 4, loop - 4
+DEBUG:root:Hairpins with parameters: stem - 4, loop - 4:WRITEN TO DF
+INFO:root:Full search of the asdfasd is done
+INFO:root:
+  Results are stored in final_asdfasd.csv
+  Please use different output name to avoid overwriting data!
